@@ -58,7 +58,7 @@
 #endif
 
 #define LUA_MYSQL_CONN "MySQL connection"
-#define LUA_MYSQL_RES "MySQL resource"
+#define LUA_MYSQL_RES "MySQL result"
 #define LUA_MYSQL_TABLENAME "mysql"
 
 typedef struct {
@@ -186,7 +186,7 @@ static int luaM_msg(lua_State *L, const int n, const char *m) {
 /*
 ** Push the value of #i field of #tuple row.
 */
-static void pushvalue (lua_State *L, void *row, long int len) {
+static void luaM_pushvalue (lua_State *L, void *row, long int len) {
     if (row == NULL)
         lua_pushnil (L);
     else
@@ -209,17 +209,22 @@ static lua_mysql_conn *Mget_conn (lua_State *L) {
 }
 
 /*
-** Check for valid resource.
+** Check for valid result.
 */
-/*
-static cur_data *Mget_res (lua_State *L) {
+static lua_mysql_res *Mget_res (lua_State *L) {
     lua_mysql_res *my_res = (lua_mysql_res *)luaL_checkudata (L, 1, LUA_MYSQL_RES);
-    luaL_argcheck (L, my_res != NULL, 1, "resource expected");
-    luaL_argcheck (L, !my_res->closed, 1, "resource is closed");
+    luaL_argcheck (L, my_res != NULL, 1, "result expected");
+    luaL_argcheck (L, !my_res->closed, 1, "result is closed");
     return my_res;
 }
+
+/*
+** MYSQL operate functions
 */
 
+/**
+** Open a connection to a MySQL Server
+*/
 static int Lmysql_connect (lua_State *L) {
     lua_mysql_conn *my_conn = (lua_mysql_conn *)lua_newuserdata(L, sizeof(lua_mysql_conn));
     luaM_setmeta (L, LUA_MYSQL_CONN);
@@ -242,20 +247,142 @@ static int Lmysql_connect (lua_State *L) {
     port = strtok(NULL, delim);
 
     if ( ! mysql_real_connect(conn, host, user, passwd, NULL, port, NULL, 0)) {
-        char error_msg[100];
-        strncpy (error_msg,  mysql_error(conn), 99);
         mysql_close (conn); /* Close conn if connect failed */
-        return luaM_msg (L, 0, error_msg);
+        return luaM_msg (L, 0, mysql_error(conn));
     }
 
     /* fill in structure */
     my_conn->closed = 0;
     my_conn->env = LUA_NOREF;
     my_conn->conn = conn;
-    //lua_pushvalue (L, env);
-    //my_conn->env = luaL_ref (L, LUA_REGISTRYINDEX);
+
     return 1;
 }
+
+/**
+** Select a MySQL database
+*/
+static int Lmysql_select_db (lua_State *L) {
+    lua_mysql_conn *my_conn = Mget_conn (L);
+    const char *db = luaL_checkstring (L, 2);
+
+    if (mysql_select_db(my_conn->conn, db) != 0) {
+        return luaM_msg (L, 0, mysql_error(my_conn->conn));
+    }
+    else {
+        lua_pushboolean(L, 1);
+        return 1;
+    }
+}
+
+/**
+** Sets the client character set
+*/
+static int Lmysql_set_charset (lua_State *L) {
+    //lua_mysql_conn *my_conn = Mget_conn (L);
+    //const char *db = luaL_checkstring (L, 2);
+    return 0;
+}
+
+/**
+** Returns the text of the error message from previous MySQL operation
+*/
+static int Lmysql_error (lua_State *L) {
+    lua_mysql_conn *my_conn = Mget_conn (L);
+    lua_pushstring(L, mysql_error(my_conn->conn));
+    return 1;
+}
+
+/**
+** Returns the numerical value of the error message from previous MySQL operation
+*/
+static int Lmysql_errno (lua_State *L) {
+    lua_mysql_conn *my_conn = Mget_conn (L);
+    lua_pushnumber(L, mysql_errno(my_conn->conn));
+    return 1;
+}
+
+/**
+** Send a MySQL query
+*/
+static int Lmysql_query (lua_State *L) {
+    lua_mysql_conn *my_conn = Mget_conn (L);
+    const char *statement = luaL_checkstring (L, 2);
+    unsigned long st_len = strlen(statement);
+
+    if (mysql_real_query(my_conn->conn, statement, st_len)) {
+        /* error executing query */
+        return luaM_msg (L, 0, mysql_error(my_conn->conn));
+    }
+    else
+    {
+        MYSQL_RES *res = mysql_store_result(my_conn->conn);
+        unsigned int num_cols = mysql_field_count(my_conn->conn);
+
+        if (res) { /* tuples returned */
+            lua_mysql_res *my_res = (lua_mysql_res *)lua_newuserdata(L, sizeof(lua_mysql_res));
+            luaM_setmeta (L, LUA_MYSQL_RES);
+
+            /* fill in structure */
+            my_res->closed = 0;
+            my_res->conn = LUA_NOREF;
+            my_res->numcols = num_cols;
+            my_res->colnames = LUA_NOREF;
+            my_res->coltypes = LUA_NOREF;
+            my_res->res = res;
+            lua_pushvalue (L, my_conn);
+            my_res->conn = luaL_ref (L, LUA_REGISTRYINDEX);
+
+            return 1;
+        }
+        else { /* mysql_use_result() returned nothing; should it have? */
+            if (num_cols == 0) { /* no tuples returned */
+                /* query does not return data (it was not a SELECT) */
+                lua_pushnumber(L, mysql_affected_rows(my_conn->conn));
+                return 1;
+            }
+            else { /* mysql_use_result() should have returned data */
+                return luaM_msg (L, 0, mysql_error(my_conn->conn));
+            }
+        }
+    }
+}
+
+/**
+** Get the ID generated from the previous INSERT operation
+*/
+static int Lmysql_insert_id (lua_State *L) {
+    lua_mysql_conn *my_conn = Mget_conn (L);
+    lua_pushnumber(L, mysql_insert_id(my_conn->conn));
+    return 1;
+}
+
+/**
+** Get result data
+*/
+static int Lmysql_result (lua_State *L) {
+    //lua_mysql_conn *my_conn = Mget_conn (L);
+    //const char *db = luaL_checkstring (L, 2);
+    return 0;
+}
+
+/**
+** Fetch a result row as an associative array, a numeric array, or both
+*/
+static int Lmysql_fetch_array (lua_State *L) {
+    lua_mysql_res *my_res = Mget_res (L);
+    MYSQL_RES *res = my_res->res;
+    unsigned long *lengths;
+    MYSQL_ROW row = mysql_fetch_row(res);
+    if (row == NULL) {
+        lua_pushnil(L);  /* no more results */
+        return 1;
+    }
+    lengths = mysql_fetch_lengths(res);
+}
+
+
+
 
 /**
  Close MySQL connection
@@ -286,18 +413,26 @@ int luaopen_mysql (lua_State *L) {
         { NULL, NULL },
     };
 
-    struct luaL_reg resource_methods[] = {
+    struct luaL_reg result_methods[] = {
+        { "result",   Lmysql_result },
+        { "fetch_array",   Lmysql_fetch_array },
         { NULL, NULL }
     };
 
     static const luaL_reg connection_methods[] = {
         { "connect",   Lmysql_connect },
+        { "error",   Lmysql_error },
+        { "errno",   Lmysql_errno },
+        { "select_db",   Lmysql_select_db },
+        { "insert_id",   Lmysql_insert_id },
+        { "set_charset",   Lmysql_set_charset },
+        { "query",   Lmysql_query },
         { "close",   Lmysql_close },
         { NULL, NULL }
     };
 
     luaM_register (L, LUA_MYSQL_CONN, connection_methods);
-    luaM_register (L, LUA_MYSQL_RES, resource_methods);
+    luaM_register (L, LUA_MYSQL_RES, result_methods);
     lua_pop (L, 2);
 
     luaL_register (L, LUA_MYSQL_TABLENAME, driver);
