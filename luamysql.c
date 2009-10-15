@@ -439,12 +439,16 @@ static int Lmysql_insert_id (lua_State *L) {
 }
 
 /**
-** Get result data
+** Escapes special characters in a string for use in a SQL statement
 */
-static int Lmysql_result (lua_State *L) {
-    //lua_mysql_conn *my_conn = Mget_conn (L);
-    //const char *db = luaL_checkstring (L, 2);
-    return 0;
+static int Lmysql_real_escape_string (lua_State *L) {
+    lua_mysql_conn *my_conn = Mget_conn (L);
+    const char *unescaped_string = luaL_checkstring (L, 2);
+    unsigned long st_len = strlen(unescaped_string);
+    char to[st_len*2+1]; 
+    mysql_real_escape_string(my_conn->conn, to, unescaped_string, st_len);
+    lua_pushstring(L, to);
+    return 1;
 }
 
 /**
@@ -553,7 +557,6 @@ int luaopen_mysql (lua_State *L) {
     };
 
     struct luaL_reg result_methods[] = {
-        { "result",   Lmysql_result },
         { "fetch_array",   Lmysql_fetch_array },
         { "free_result",   Lmysql_free_result },
         { NULL, NULL }
@@ -569,6 +572,8 @@ int luaopen_mysql (lua_State *L) {
         { "affected_rows",   Lmysql_affected_rows },
         { "get_server_info",   Lmysql_get_server_info },
         { "get_server_version",   Lmysql_get_server_version },
+        { "real_escape_string",   Lmysql_real_escape_string },
+        { "escape_string",   Lmysql_real_escape_string },
         { "query",   Lmysql_query },
         { "close",   Lmysql_close },
         { NULL, NULL }
