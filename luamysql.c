@@ -301,9 +301,39 @@ static int Lmysql_select_db (lua_State *L) {
 ** Sets the client character set
 */
 static int Lmysql_set_charset (lua_State *L) {
-    //lua_mysql_conn *my_conn = Mget_conn (L);
-    //const char *db = luaL_checkstring (L, 2);
-    return 0;
+    lua_mysql_conn *my_conn = Mget_conn (L);
+    const char *charset = luaL_checkstring (L, 2);
+    const char statement1[1024];
+
+    /* major_version*10000 + minor_version *100 + sub_version
+      For example, 5.1.5 is returned as 50105. 
+    */
+    unsigned long version = mysql_get_server_version(my_conn->conn);
+
+    /* set charset */
+    if ( version > 41000) {
+        sprintf(statement1, "SET character_set_connection=%s, character_set_results=%s, character_set_client=binary", charset, charset);
+        unsigned long st_len1 = strlen(statement1);
+        if (mysql_real_query(my_conn->conn, statement1, st_len1)) {
+            return luaM_msg (L, 0, mysql_error(my_conn->conn));
+        }
+    }
+    else {
+        if (mysql_set_character_set(my_conn->conn, charset)) {
+            return luaM_msg (L, 0, mysql_error(my_conn->conn));
+        }
+    }
+
+    if ( version > 50001) {
+        const char *statement2 = "SET sql_mode=''";
+        unsigned long st_len2 = strlen(statement2);
+        if (mysql_real_query(my_conn->conn, statement2, st_len2)) {
+            return luaM_msg (L, 0, mysql_error(my_conn->conn));
+        }
+    }
+
+    lua_pushboolean(L, 1);
+    return 1;
 }
 
 /**
@@ -321,6 +351,35 @@ static int Lmysql_error (lua_State *L) {
 static int Lmysql_errno (lua_State *L) {
     lua_mysql_conn *my_conn = Mget_conn (L);
     lua_pushnumber(L, mysql_errno(my_conn->conn));
+    return 1;
+}
+
+/**
+** Returns the version number of the server as an integer
+** major_version*10000 + minor_version *100 + sub_version
+** For example, 5.1.5 is returned as 50105. 
+*/
+static int Lmysql_get_server_version (lua_State *L) {
+    lua_mysql_conn *my_conn = Mget_conn (L);
+    lua_pushnumber(L, mysql_get_server_version(my_conn->conn));
+    return 1;
+}
+
+/**
+** Returns a string that represents the server version number. 
+*/
+static int Lmysql_get_server_info (lua_State *L) {
+    lua_mysql_conn *my_conn = Mget_conn (L);
+    lua_pushstring(L, mysql_get_server_info(my_conn->conn));
+    return 1;
+}
+
+/**
+**  Get number of affected rows in previous MySQL operation
+*/
+static int Lmysql_affected_rows (lua_State *L) {
+    lua_mysql_conn *my_conn = Mget_conn (L);
+    lua_pushnumber(L, mysql_affected_rows(my_conn->conn));
     return 1;
 }
 
@@ -507,6 +566,9 @@ int luaopen_mysql (lua_State *L) {
         { "select_db",   Lmysql_select_db },
         { "insert_id",   Lmysql_insert_id },
         { "set_charset",   Lmysql_set_charset },
+        { "affected_rows",   Lmysql_affected_rows },
+        { "get_server_info",   Lmysql_get_server_info },
+        { "get_server_version",   Lmysql_get_server_version },
         { "query",   Lmysql_query },
         { "close",   Lmysql_close },
         { NULL, NULL }
