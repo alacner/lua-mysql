@@ -19,7 +19,14 @@ print(db:select_db('testdb'))
 print(db:query("insert `table` (`hits`,`time`,`col1`,`col2`) values (10000, 33333, 'haha', 'hehe')"))
 print(db:insert_id())
 local rs = db:query("select * from `table`")
+
 local row = rs:fetch_array({}, 'a')
+while row do
+    print_r(row)
+    row = rs:fetch_array({}, 'a')
+end
+
+local row = rs:fetch_array({}, 'n')
 print_r(row)
 
 print(rs:free_result())
@@ -29,3 +36,26 @@ print(db)
 print(err)
 --db:close()
 --mysql.query(db, 'delete from `testdb`.`table` where `testdb`.`table`.`id` > 2')
+
+--[==[
+local db, err = mysql.connect('localhost', 'root', 'kernel')
+print(db:select_db('testdb'))
+while true do
+    print(db:query("insert `table` (`hits`,`time`,`col1`,`col2`) values (10000, 33333, 'haha', 'hehe')"))
+    print(db:insert_id())
+--[[
+    local rs = db:query("select * from `table`")
+    local row = rs:fetch_array({}, 'a')
+    while row do
+        print_r(row)
+        row = rs:fetch_array({}, 'a')
+    end
+
+    --local row = rs:fetch_array({}, 'n')
+    --print_r(row)
+    rs:free_result()
+--]]
+end
+
+db:close()
+--]==]
