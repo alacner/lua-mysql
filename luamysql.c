@@ -504,6 +504,17 @@ static int Lmysql_fetch_array (lua_State *L) {
     }
 }
 
+/*
+** Rollback the current transaction.
+*/
+static int Lmysql_rollback (lua_State *L) {
+    lua_mysql_conn *my_conn = Mget_conn (L);
+    if (mysql_rollback(my_conn->conn)) {
+        return luaM_msg (L, 0, mysql_error(my_conn->conn));
+    }
+    return 0;
+}
+
 /**
 ** Free result memory
 */
@@ -575,6 +586,7 @@ int luaopen_mysql (lua_State *L) {
         { "real_escape_string",   Lmysql_real_escape_string },
         { "escape_string",   Lmysql_real_escape_string },
         { "query",   Lmysql_query },
+        { "rollback",   Lmysql_rollback },
         { "close",   Lmysql_close },
         { NULL, NULL }
     };
