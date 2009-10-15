@@ -193,6 +193,28 @@ static void luaM_pushvalue (lua_State *L, void *row, long int len) {
         lua_pushlstring (L, row, len);
 }
 
+/*
+** Creates the lists of fields names and fields types.
+*/
+static void luaM_colinfo (lua_State *L, lua_mysql_res *my_res) {
+    MYSQL_FIELD *fields;
+    char typename[50];
+    int i;
+    fields = mysql_fetch_fields(my_res->res);
+    lua_newtable (L); /* names */
+    lua_newtable (L); /* types */
+    for (i = 1; i <= my_res->numcols; i++) {
+        lua_pushstring (L, fields[i-1].name);
+        lua_rawseti (L, -3, i);
+        sprintf (typename, "%.20s(%ld)", luaM_getcolumntype (fields[i-1].type), fields[i-1].length);
+        lua_pushstring(L, typename);
+        lua_rawseti (L, -2, i);
+    }
+    /* Stores the references in the cursor structure */
+    my_res->coltypes = luaL_ref (L, LUA_REGISTRYINDEX);
+    my_res->colnames = luaL_ref (L, LUA_REGISTRYINDEX);
+}
+
 
 /**
 ** Handle Part
@@ -378,11 +400,69 @@ static int Lmysql_fetch_array (lua_State *L) {
         lua_pushnil(L);  /* no more results */
         return 1;
     }
+
     lengths = mysql_fetch_lengths(res);
+    if (lua_istable (L, 2)) {
+        const char *opts = luaL_optstring (L, 3, "n");
+        if (strchr (opts, 'n') != NULL) {
+            /* Copy values to numerical indices */
+            int i;
+            for (i = 0; i < my_res->numcols; i++) {
+                luaM_pushvalue (L, row[i], lengths[i]);
+                lua_rawseti (L, 2, i+1);
+            }
+        }
+        if (strchr (opts, 'a') != NULL) {
+            int i;
+            /* Check if colnames exists */
+            if (my_res->colnames == LUA_NOREF)
+                luaM_colinfo(L, my_res);
+            lua_rawgeti (L, LUA_REGISTRYINDEX, my_res->colnames);/* Push colnames*/
+
+            /* Copy values to alphanumerical indices */
+            for (i = 0; i < my_res->numcols; i++) {
+                lua_rawgeti(L, -1, i+1); /* push the field name */
+
+                /* Actually push the value */
+                luaM_pushvalue (L, row[i], lengths[i]);
+                lua_rawset (L, 2);
+            }
+            /* lua_pop(L, 1);  Pops colnames table. Not needed */
+        }
+        lua_pushvalue(L, 2);
+        return 1; /* return table */
+    }
+    else {
+        int i;
+        luaL_checkstack (L, my_res->numcols, "too many columns");
+        for (i = 0; i < my_res->numcols; i++)
+            luaM_pushvalue (L, row[i], lengths[i]);
+        return my_res->numcols; /* return #numcols values */
+    }
 }
 
+/**
+** Free result memory
+*/
+static int Lmysql_free_result (lua_State *L) {
+    lua_mysql_res *my_res = (lua_mysql_res *)luaL_checkudata (L, 1, LUA_MYSQL_RES);
+    luaL_argcheck (L, my_res != NULL, 1, "result expected");
+    if (my_res->closed) {
+        lua_pushboolean (L, 0);
+        return 1;
+    }
 
+    /* Nullify structure fields. */
+    my_res->closed = 1;
+    mysql_free_result(my_res->res);
+    luaL_unref (L, LUA_REGISTRYINDEX, my_res->conn);
+    luaL_unref (L, LUA_REGISTRYINDEX, my_res->colnames);
+    luaL_unref (L, LUA_REGISTRYINDEX, my_res->coltypes);
 
+    lua_pushboolean (L, 1);
+
+    return 1;
+}
 
 /**
  Close MySQL connection
@@ -416,6 +496,7 @@ int luaopen_mysql (lua_State *L) {
     struct luaL_reg result_methods[] = {
         { "result",   Lmysql_result },
         { "fetch_array",   Lmysql_fetch_array },
+        { "free_result",   Lmysql_free_result },
         { NULL, NULL }
     };
 
