@@ -272,7 +272,7 @@ static int Lmysql_connect (lua_State *L) {
     luaM_setmeta (L, LUA_MYSQL_CONN);
 
     char *host = NULL, *socket=NULL, *tmp=NULL, htmp[1024];
-    const char *host_and_port = luaL_optstring(L, 1, NULL);
+    char *host_and_port = luaL_optstring(L, 1, NULL);
     const char *user = luaL_optstring(L, 2, NULL);
     const char *passwd = luaL_optstring(L, 3, NULL);
 
@@ -286,7 +286,8 @@ static int Lmysql_connect (lua_State *L) {
     }
 
     if (host_and_port && (tmp=strchr(host_and_port, ':'))) {
-        strncpy(htmp, host_and_port, strlen(host_and_port)-strlen(tmp));
+        host_and_port[strlen(host_and_port)-strlen(tmp)] = '\0';
+        strcpy(htmp, host_and_port);
         host = htmp;
         tmp++;
         if (tmp[0] != '/') {
@@ -299,7 +300,9 @@ static int Lmysql_connect (lua_State *L) {
             socket = tmp;
         }
     } else {
-        host = host_and_port;
+        host_and_port[strlen(host_and_port)] = '\0';
+        strcpy(htmp, host_and_port);
+        host = htmp;
     }
 
 #if MYSQL_VERSION_ID < 32200
