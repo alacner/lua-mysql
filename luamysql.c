@@ -614,8 +614,7 @@ static int Lmysql_fetch_assoc (lua_State *L) {
 ** Fetch a result row as an associative array, a numeric array, or both
 */
 static int Lmysql_fetch_array (lua_State *L) {
-    return Lmysql_do_fetch(L, MYSQL_NUM);
-    const char *result_type = luaL_optstring (L, 1, "MYSQL_BOTH");
+    const char *result_type = luaL_optstring (L, 2, "MYSQL_BOTH");
 
         return luaM_msg (L, 0, result_type);
 /*
