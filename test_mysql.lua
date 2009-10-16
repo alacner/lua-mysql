@@ -5,6 +5,12 @@ local db, h,d = mysql.connect('localhost', 'root', 'kernelx', 'testdb', 3306)
 print(db)
 print(h)
 print(d)
+print('-----#0-------------------')
+local db, err, a = mysql.connect(':/tmp/mysql', 'root', 'kernel')
+--local db, h = mysql.connect('localhost', 'root', 'kernel', 'testdb', 3306)
+print(db)
+print(err)
+print(a)
 print('-----#1-------------------')
 local db, err, a = mysql.connect('example.com:3307', 'root', 'kernel')
 --local db, h = mysql.connect('localhost', 'root', 'kernel', 'testdb', 3306)
@@ -17,13 +23,13 @@ local db, err, a = mysql.connect('localhost:/tmp/mysql.sock', 'root', 'kernel')
 print(db)
 print(err)
 print(a)
-os.exit();
+--os.exit();
 print('------------------------')
 local db, err = mysql.connect('localhost', 'root', 'kernel')
 print(db:select_db('testdb'))
 --print(db:select_db('testdb3'))
-
-print(db:set_charset("utf8")) -- there is no char '-'
+print(db:set_charset("utf-8")) -- there is no char '-'
+--os.exit();
 print(db:query("insert `table` (`hits`,`time`,`col1`,`col2`) values (10000, 33333, '天使', 'hehe')"))
 print(db:insert_id())
 print(db:affected_rows())

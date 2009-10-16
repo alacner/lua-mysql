@@ -345,12 +345,22 @@ static int Lmysql_select_db (lua_State *L) {
 */
 static int Lmysql_set_charset (lua_State *L) {
     lua_mysql_conn *my_conn = Mget_conn (L);
-    const char *charset = luaL_checkstring (L, 2);
+    const char *ncharset = luaL_checkstring (L, 2);
+    char charset[1024];
 
     /* major_version*10000 + minor_version *100 + sub_version
       For example, 5.1.5 is returned as 50105. 
     */
     unsigned long version = mysql_get_server_version(my_conn->conn);
+
+    int i, j=0;
+    for (i = 0; i < strlen(ncharset); i++) {
+        if (ncharset[i] != '-') {
+            charset[j] = ncharset[i];
+            j++;
+        }
+    }
+    charset[j] = 0;
 
     /* set charset */
     if ( version > 41000) {
