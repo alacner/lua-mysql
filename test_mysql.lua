@@ -30,6 +30,18 @@ local rs = db:query("select * from `table`")
 --local rs = db:unbuffered_query("select * from `table`")
 print(rs:num_fields())
 print(rs:num_rows())
+--os.exit();
+local row = rs:fetch_row()
+print_r(row)
+local row = rs:fetch_row()
+print_r(row)
+local row = rs:fetch_assoc()
+print_r(row)
+os.exit();
+while row do
+    print_r(row)
+    row = rs:fetch_row()
+end
 os.exit();
 local row = rs:fetch_array({}, 'a')
 while row do

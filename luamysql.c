@@ -55,6 +55,10 @@
 
 #endif
 
+#define MYSQL_ASSOC     1<<0
+#define MYSQL_NUM       1<<1
+#define MYSQL_BOTH      (MYSQL_ASSOC|MYSQL_NUM)
+
 #define MYSQL_USE_RESULT    0
 #define MYSQL_STORE_RESULT  1
 
@@ -516,67 +520,79 @@ static int Lmysql_num_rows (lua_State *L) {
     return 1;
 }
 
-/**
-** Get a result row as an enumerated array
-*/
-static int Lmysql_fetch_row (lua_State *L) {
-    lua_mysql_res *my_res = Mget_res (L);
-    MYSQL_RES *res = my_res->res;
-    lua_Number offset = luaL_optnumber(L, 2, 0);
-
-    return 0;
-}
-
-/**
-** Fetch a result row as an associative array, a numeric array, or both
-*/
-static int Lmysql_fetch_array (lua_State *L) {
+static int Lmysql_do_fetch (lua_State *L, int result_type) {
     lua_mysql_res *my_res = Mget_res (L);
     MYSQL_RES *res = my_res->res;
     unsigned long *lengths;
+
     MYSQL_ROW row = mysql_fetch_row(res);
     if (row == NULL) {
         lua_pushnil(L);  /* no more results */
         return 1;
     }
 
+    lua_newtable(L);
+
     lengths = mysql_fetch_lengths(res);
-    if (lua_istable (L, 2)) {
-        const char *opts = luaL_optstring (L, 3, "n");
-        if (strchr (opts, 'n') != NULL) {
-            /* Copy values to numerical indices */
-            int i;
-            for (i = 0; i < my_res->numcols; i++) {
-                luaM_pushvalue (L, row[i], lengths[i]);
-                lua_rawseti (L, 2, i+1);
-            }
-        }
-        if (strchr (opts, 'a') != NULL) {
-            int i;
-            /* Check if colnames exists */
-            if (my_res->colnames == LUA_NOREF)
-                luaM_colinfo(L, my_res);
-            lua_rawgeti (L, LUA_REGISTRYINDEX, my_res->colnames);/* Push colnames*/
 
-            /* Copy values to alphanumerical indices */
-            for (i = 0; i < my_res->numcols; i++) {
-                lua_rawgeti(L, -1, i+1); /* push the field name */
-
-                /* Actually push the value */
-                luaM_pushvalue (L, row[i], lengths[i]);
-                lua_rawset (L, 2);
-            }
-            /* lua_pop(L, 1);  Pops colnames table. Not needed */
+    if (result_type & MYSQL_NUM) {
+        int i;
+        /* Copy values to numerical indices */
+        for (i = 0; i < my_res->numcols; i++) {
+            luaM_pushvalue (L, row[i], lengths[i]);
+            lua_rawseti (L, -2, i+1);
         }
-        lua_pushvalue(L, 2);
-        return 1; /* return table */
+    }
+
+    if (result_type & MYSQL_ASSOC) {
+        int i;
+        /* Check if colnames exists */
+        if (my_res->colnames == LUA_NOREF)
+            luaM_colinfo(L, my_res);
+        lua_rawgeti (L, LUA_REGISTRYINDEX, my_res->colnames);/* Push colnames*/
+
+        /* Copy values to alphanumerical indices */
+        for (i = 0; i < my_res->numcols; i++) {
+            lua_rawgeti(L, -1, i+1); /* push the field name */
+
+            /* Actually push the value */
+            luaM_pushvalue (L, row[i], lengths[i]);
+            lua_rawset (L, -2);
+        }
+        /* lua_pop(L, 1);  Pops colnames table. Not needed */
+    }
+
+    //lua_pushvalue(L, 2);
+    return 1; /* return table */
+}
+
+/**
+** Get a result row as an enumerated array
+*/
+static int Lmysql_fetch_row (lua_State *L) {
+    return Lmysql_do_fetch(L, MYSQL_NUM);
+}
+
+/**
+** Get a result row as an enumerated array
+*/
+static int Lmysql_fetch_assoc (lua_State *L) {
+    return Lmysql_do_fetch(L, MYSQL_ASSOC);
+}
+
+/**
+** Fetch a result row as an associative array, a numeric array, or both
+*/
+static int Lmysql_fetch_array (lua_State *L) {
+    const char *result_type = luaL_optstring (L, 2, MYSQL_BOTH);
+    if (result_type == "MYSQL_NUM") {
+        return Lmysql_do_fetch(L, MYSQL_NUM);
+    }
+    else if (result_type == "MYSQL_ASSOC") {
+        return Lmysql_do_fetch(L, MYSQL_ASSOC);
     }
     else {
-        int i;
-        luaL_checkstack (L, my_res->numcols, "too many columns");
-        for (i = 0; i < my_res->numcols; i++)
-            luaM_pushvalue (L, row[i], lengths[i]);
-        return my_res->numcols; /* return #numcols values */
+        return Lmysql_do_fetch(L, MYSQL_BOTH);
     }
 }
 
@@ -652,6 +668,8 @@ int luaopen_mysql (lua_State *L) {
         { "data_seek",   Lmysql_data_seek },
         { "num_fields",   Lmysql_num_fields },
         { "num_rows",   Lmysql_num_rows },
+        { "fetch_row",   Lmysql_fetch_row },
+        { "fetch_assoc",   Lmysql_fetch_assoc },
         { "fetch_array",   Lmysql_fetch_array },
         { "free_result",   Lmysql_free_result },
         { NULL, NULL }
