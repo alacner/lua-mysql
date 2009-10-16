@@ -55,6 +55,9 @@
 
 #endif
 
+#define MYSQL_USE_RESULT    0
+#define MYSQL_STORE_RESULT  1
+
 /* Compatibility between Lua 5.1+ and Lua 5.0 */
 #ifndef LUA_VERSION_NUM
 #define LUA_VERSION_NUM 0
@@ -392,18 +395,27 @@ static int Lmysql_affected_rows (lua_State *L) {
 /**
 ** Send a MySQL query
 */
-static int Lmysql_query (lua_State *L) {
+static int Lmysql_do_query (lua_State *L, char *statement, int use_store) {
     lua_mysql_conn *my_conn = Mget_conn (L);
-    const char *statement = luaL_checkstring (L, 2);
     unsigned long st_len = strlen(statement);
-
+    MYSQL_RES *res;
+    /* mysql_query is binary unsafe, use mysql_real_query */
+#if MYSQL_VERSION_ID > 32199
     if (mysql_real_query(my_conn->conn, statement, st_len)) {
+#else
+    if (mysql_query(my_conn->conn, statement)) {
+#endif
         /* error executing query */
         return luaM_msg (L, 0, mysql_error(my_conn->conn));
     }
     else
     {
-        MYSQL_RES *res = mysql_store_result(my_conn->conn);
+        if(use_store == MYSQL_USE_RESULT) {
+            res = mysql_use_result(my_conn->conn);
+        } else {
+            res = mysql_store_result(my_conn->conn);
+        }
+
         unsigned int num_cols = mysql_field_count(my_conn->conn);
 
         if (res) { /* tuples returned */
@@ -433,6 +445,16 @@ static int Lmysql_query (lua_State *L) {
             }
         }
     }
+}
+
+static int Lmysql_query (lua_State *L) {
+    const char *statement = luaL_checkstring (L, 2);
+    return Lmysql_do_query(L, statement, MYSQL_STORE_RESULT);
+}
+
+static int Lmysql_unbuffered_query (lua_State *L) {
+    const char *statement = luaL_checkstring (L, 2);
+    return Lmysql_do_query(L, statement, MYSQL_USE_RESULT);
 }
 
 /**
@@ -562,6 +584,11 @@ static int Lmysql_close (lua_State *L) {
     return 1;
 }
 
+static int Lmysql_test (lua_State *L) {
+    lua_mysql_conn *my_conn = Mget_conn (L);
+    lua_pushnumber (L, MYSQL_VERSION_ID);
+    return 1;
+}
 
 /*
 ** Creates the metatables for the objects and registers the
@@ -592,8 +619,10 @@ int luaopen_mysql (lua_State *L) {
         { "real_escape_string",   Lmysql_real_escape_string },
         { "escape_string",   Lmysql_real_escape_string },
         { "query",   Lmysql_query },
+        { "unbuffered_query",   Lmysql_unbuffered_query },
         { "rollback",   Lmysql_rollback },
         { "close",   Lmysql_close },
+        { "test",   Lmysql_test },
         { NULL, NULL }
     };
 
