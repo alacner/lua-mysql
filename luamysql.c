@@ -480,6 +480,54 @@ static int Lmysql_real_escape_string (lua_State *L) {
 }
 
 /**
+** Move internal result pointer
+*/
+static int Lmysql_data_seek (lua_State *L) {
+    lua_mysql_res *my_res = Mget_res (L);
+    MYSQL_RES *res = my_res->res;
+    lua_Number offset = luaL_optnumber(L, 2, 0);
+
+    mysql_data_seek(res, offset);
+
+    return 0;
+}
+
+/**
+** Get number of fields in result
+*/
+static int Lmysql_num_fields (lua_State *L) {
+    lua_mysql_res *my_res = Mget_res (L);
+    MYSQL_RES *res = my_res->res;
+
+    lua_pushnumber (L, mysql_num_fields(res));
+
+    return 1;
+}
+
+/**
+** Get number of rows in result
+*/
+static int Lmysql_num_rows (lua_State *L) {
+    lua_mysql_res *my_res = Mget_res (L);
+    MYSQL_RES *res = my_res->res;
+
+    lua_pushnumber (L, mysql_num_rows(res));
+
+    return 1;
+}
+
+/**
+** Get a result row as an enumerated array
+*/
+static int Lmysql_fetch_row (lua_State *L) {
+    lua_mysql_res *my_res = Mget_res (L);
+    MYSQL_RES *res = my_res->res;
+    lua_Number offset = luaL_optnumber(L, 2, 0);
+
+    return 0;
+}
+
+/**
 ** Fetch a result row as an associative array, a numeric array, or both
 */
 static int Lmysql_fetch_array (lua_State *L) {
@@ -601,6 +649,9 @@ int luaopen_mysql (lua_State *L) {
     };
 
     struct luaL_reg result_methods[] = {
+        { "data_seek",   Lmysql_data_seek },
+        { "num_fields",   Lmysql_num_fields },
+        { "num_rows",   Lmysql_num_rows },
         { "fetch_array",   Lmysql_fetch_array },
         { "free_result",   Lmysql_free_result },
         { NULL, NULL }
