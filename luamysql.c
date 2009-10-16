@@ -591,7 +591,18 @@ static int Lmysql_do_fetch (lua_State *L, int result_type) {
             luaM_pushvalue (L, row[i], lengths[i]);
             lua_rawset (L, -4);
         }
-        lua_pop(L, -4); /* Pops colnames table. */
+
+        if (result_type == MYSQL_BOTH) {
+            /* Copy values to numerical indices */
+            for (i = 0; i < my_res->numcols; i++) {
+                luaM_pushvalue (L, row[i], lengths[i]);
+                lua_rawseti (L, -4, i+1);
+            }
+            lua_pop(L, -5); /* Pops colnames table. */
+        }
+        else {
+            lua_pop(L, -4); /* Pops colnames table. */
+        }
     }
     return 1; /* return table */
 }
@@ -614,9 +625,10 @@ static int Lmysql_fetch_assoc (lua_State *L) {
 ** Fetch a result row as an associative array, a numeric array, or both
 */
 static int Lmysql_fetch_array (lua_State *L) {
-    const char *result_type = luaL_optstring (L, 2, "MYSQL_BOTH");
+    return Lmysql_do_fetch(L, MYSQL_BOTH);
+    //const char *result_type = luaL_optstring (L, 2, "MYSQL_BOTH");
 
-        return luaM_msg (L, 0, result_type);
+    //    return luaM_msg (L, 0, result_type);
 /*
     if (result_type == "MYSQL_NUM") {
         return Lmysql_do_fetch(L, my_res, MYSQL_NUM);
