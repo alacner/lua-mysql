@@ -1,3 +1,9 @@
+/*
+ * luamysql - MYSQL driver
+ * (c) 2009-19 Alacner zhang <alacner@gmail.com>
+ * This content is released under the MIT License.
+ */
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
