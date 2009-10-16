@@ -1,16 +1,23 @@
 require "mysql"
 require "print_r"
 
-local db, h = mysql.connect('localhost', 'root', 'kernelx', 'testdb', 3306)
+local db, h,d = mysql.connect('localhost', 'root', 'kernelx', 'testdb', 3306)
 print(db)
 print(h)
-print('------------------------')
-local db, h = mysql.connect('localhost', 'root', 'kernel', 'testdb')
---local db, err = mysql.connect('localhost:3308', 'root', 'kernel')
+print(d)
+print('-----#1-------------------')
+local db, err, a = mysql.connect('example.com:3307', 'root', 'kernel')
 --local db, h = mysql.connect('localhost', 'root', 'kernel', 'testdb', 3306)
 print(db)
 print(err)
-
+print(a)
+print('-----#2-------------------')
+local db, err, a = mysql.connect('localhost:/tmp/mysql.sock', 'root', 'kernel')
+--local db, h = mysql.connect('localhost', 'root', 'kernel', 'testdb', 3306)
+print(db)
+print(err)
+print(a)
+os.exit();
 print('------------------------')
 local db, err = mysql.connect('localhost', 'root', 'kernel')
 print(db:select_db('testdb'))
@@ -24,24 +31,40 @@ print(db:query("insert `table` (`dhits`,`time`,`col1`,`col2`) values (10000, 333
 print(db:affected_rows())
 print(db:escape_string('哈哈"'))
 print(db:real_escape_string([['哈哈`"'\n]]))
-print(db:test())
 --os.exit();
-local rs = db:query("select * from `table`")
+local rs = db:query("select * from `table` limit 30")
 --local rs = db:unbuffered_query("select * from `table`")
-print(rs:num_fields())
-print(rs:num_rows())
+--print(rs:num_fields())
+--print(rs:num_rows())
+--os.exit();
+print('----row------------')
+--[[
+local row = rs:fetch({}, 'a')
+while row do
+    print_r(row)
+    row = rs:fetch({}, 'a')
+end
+--]]
+--print_r(row)
+--print('------array mysql_num----------')
+--local row = rs:fetch_array("MYSQL_NUM")
+--print_r(row)
+--print('--------assoc--------')
+--local row = rs:fetch_assoc()
+--print_r(row)
 --os.exit();
 local row = rs:fetch_row()
-print_r(row)
-local row = rs:fetch_row()
-print_r(row)
-local row = rs:fetch_assoc()
-print_r(row)
-os.exit();
 while row do
     print_r(row)
     row = rs:fetch_row()
 end
+--[[
+while row do
+    print_r(row)
+    row = rs:fetch_assoc()
+end
+--]]
+print('===================')
 os.exit();
 local row = rs:fetch_array({}, 'a')
 while row do
