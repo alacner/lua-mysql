@@ -55,9 +55,9 @@
 
 #endif
 
-#define MYSQL_ASSOC     1<<0
-#define MYSQL_NUM       1<<1
-#define MYSQL_BOTH      (MYSQL_ASSOC|MYSQL_NUM)
+#define MYSQL_NUM       0 
+#define MYSQL_ASSOC     1 
+#define MYSQL_BOTH      2
 
 #define MYSQL_USE_RESULT    0
 #define MYSQL_STORE_RESULT  1
@@ -98,10 +98,6 @@ typedef struct {
 void luaM_setmeta (lua_State *L, const char *name);
 int luaM_register (lua_State *L, const char *name, const luaL_reg *methods);
 int luaopen_mysql (lua_State *L);
-
-/**
-** common functions Part
-*/
 
 /*
 ** Get the internal database type of the given column.
@@ -551,8 +547,7 @@ static int Lmysql_num_rows (lua_State *L) {
     return 1;
 }
 
-static int Lmysql_do_fetch (lua_State *L, int result_type) {
-    lua_mysql_res *my_res = Mget_res (L);
+static int Lmysql_do_fetch (lua_State *L, lua_mysql_res *my_res, int result_type) {
     MYSQL_RES *res = my_res->res;
     unsigned long *lengths;
 
@@ -567,7 +562,7 @@ static int Lmysql_do_fetch (lua_State *L, int result_type) {
 
     lengths = mysql_fetch_lengths(res);
 
-    if (result_type & MYSQL_NUM) {
+    if (result_type == MYSQL_NUM) {
         int i;
         /* Copy values to numerical indices */
         for (i = 0; i < my_res->numcols; i++) {
@@ -575,8 +570,7 @@ static int Lmysql_do_fetch (lua_State *L, int result_type) {
             lua_rawseti (L, -2, i+1);
         }
     }
-
-    if (result_type & MYSQL_ASSOC) {
+    else {
         int i;
         /* Check if colnames exists */
         if (my_res->colnames == LUA_NOREF)
@@ -593,6 +587,7 @@ static int Lmysql_do_fetch (lua_State *L, int result_type) {
         }
 
         if (result_type == MYSQL_BOTH) {
+            //lua_pushstring(L, "both"); return 1;
             /* Copy values to numerical indices */
             for (i = 0; i < my_res->numcols; i++) {
                 luaM_pushvalue (L, row[i], lengths[i]);
@@ -601,6 +596,7 @@ static int Lmysql_do_fetch (lua_State *L, int result_type) {
             lua_pop(L, -5); /* Pops colnames table. */
         }
         else {
+            //lua_pushstring(L, "assoc"); return 1;
             lua_pop(L, -4); /* Pops colnames table. */
         }
     }
@@ -611,25 +607,25 @@ static int Lmysql_do_fetch (lua_State *L, int result_type) {
 ** Get a result row as an enumerated array
 */
 static int Lmysql_fetch_row (lua_State *L) {
-    return Lmysql_do_fetch(L, MYSQL_NUM);
+    lua_mysql_res *my_res = Mget_res (L);
+    return Lmysql_do_fetch(L, my_res, MYSQL_NUM);
 }
 
 /**
 ** Get a result row as an enumerated array
 */
 static int Lmysql_fetch_assoc (lua_State *L) {
-    return Lmysql_do_fetch(L, MYSQL_ASSOC);
+    lua_mysql_res *my_res = Mget_res (L);
+    return Lmysql_do_fetch(L, my_res, MYSQL_ASSOC);
 }
 
 /**
 ** Fetch a result row as an associative array, a numeric array, or both
 */
 static int Lmysql_fetch_array (lua_State *L) {
-    return Lmysql_do_fetch(L, MYSQL_BOTH);
-    //const char *result_type = luaL_optstring (L, 2, "MYSQL_BOTH");
+    lua_mysql_res *my_res = Mget_res (L);
+    const char *result_type = luaL_optstring (L, 2, "MYSQL_BOTH");
 
-    //    return luaM_msg (L, 0, result_type);
-/*
     if (result_type == "MYSQL_NUM") {
         return Lmysql_do_fetch(L, my_res, MYSQL_NUM);
     }
@@ -639,7 +635,6 @@ static int Lmysql_fetch_array (lua_State *L) {
     else {
         return Lmysql_do_fetch(L, my_res, MYSQL_BOTH);
     }
-*/
 }
 
 /*

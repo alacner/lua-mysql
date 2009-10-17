@@ -40,10 +40,19 @@ print_r(row)
 print('------array MYSQL_BOTH----------')
 local row = rs:fetch_array("MYSQL_BOTH")
 print_r(row)
+print('------array MYSQL_ASSOC----------')
+local row = rs:fetch_array("MYSQL_ASSOC")
+print_r(row)
+print('------array MYSQL_NUM----------')
+local row = rs:fetch_array("MYSQL_NUM")
+print_r(row)
+print('------array----------')
+local row = rs:fetch_array()
+print_r(row)
 os.exit()
 while row do
     print_r(row)
-    row = rs:fetch_array("MYSQL_BOTH")
+    row = rs:fetch_array("MYSQL_ASSOC")
 end
 
 
