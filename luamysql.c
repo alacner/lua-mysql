@@ -1,8 +1,8 @@
-/*
+/**
  * luamysql - MYSQL driver
  * (c) 2009-19 Alacner zhang <alacner@gmail.com>
  * This content is released under the MIT License.
- */
+*/
 
 #include <assert.h>
 #include <stdio.h>
@@ -98,8 +98,8 @@ void luaM_setmeta (lua_State *L, const char *name);
 int luaM_register (lua_State *L, const char *name, const luaL_reg *methods);
 int luaopen_mysql (lua_State *L);
 
-/*
-** Get the internal database type of the given column.
+/**
+* Get the internal database type of the given column.
 */
 static char *luaM_getcolumntype (enum enum_field_types type) {
 
@@ -130,9 +130,9 @@ static char *luaM_getcolumntype (enum enum_field_types type) {
     }
 }
 
-/*                   
-** Return the name of the object's metatable.
-** This function is used by `tostring'.     
+/**                   
+* Return the name of the object's metatable.
+* This function is used by `tostring'.     
 */                            
 static int luaM_tostring (lua_State *L) {                
     char buff[100];             
@@ -145,16 +145,16 @@ static int luaM_tostring (lua_State *L) {
     return 1;                            
 }       
 
-/*
-** Define the metatable for the object on top of the stack
+/**
+* Define the metatable for the object on top of the stack
 */
 void luaM_setmeta (lua_State *L, const char *name) {
     luaL_getmetatable (L, name);
     lua_setmetatable (L, -2);
 }     
 
-/*
-** Create a metatable and leave it on top of the stack.
+/**
+* Create a metatable and leave it on top of the stack.
 */
 int luaM_register (lua_State *L, const char *name, const luaL_reg *methods) {
     if (!luaL_newmetatable (L, name))
@@ -184,8 +184,8 @@ int luaM_register (lua_State *L, const char *name, const luaL_reg *methods) {
     return 1;
 }
 
-/*
-** message
+/**
+* message
 */
 
 static int luaM_msg(lua_State *L, const int n, const char *m) {
@@ -198,8 +198,8 @@ static int luaM_msg(lua_State *L, const int n, const char *m) {
     return 2;
 }
 
-/*
-** Push the value of #i field of #tuple row.
+/**
+* Push the value of #i field of #tuple row.
 */
 static void luaM_pushvalue (lua_State *L, void *row, long int len) {
     if (row == NULL)
@@ -208,8 +208,8 @@ static void luaM_pushvalue (lua_State *L, void *row, long int len) {
         lua_pushlstring (L, row, len);
 }
 
-/*
-** Creates the lists of fields names and fields types.
+/**
+* Creates the lists of fields names and fields types.
 */
 static void luaM_colinfo (lua_State *L, lua_mysql_res *my_res) {
     MYSQL_FIELD *fields;
@@ -232,11 +232,11 @@ static void luaM_colinfo (lua_State *L, lua_mysql_res *my_res) {
 
 
 /**
-** Handle Part
+* Handle Part
 */
 
-/*
-** Check for valid connection.
+/**
+* Check for valid connection.
 */
 static lua_mysql_conn *Mget_conn (lua_State *L) {
     lua_mysql_conn *my_conn = (lua_mysql_conn *)luaL_checkudata (L, 1, LUA_MYSQL_CONN);
@@ -245,8 +245,8 @@ static lua_mysql_conn *Mget_conn (lua_State *L) {
     return my_conn;
 }
 
-/*
-** Check for valid result.
+/**
+* Check for valid result.
 */
 static lua_mysql_res *Mget_res (lua_State *L) {
     lua_mysql_res *my_res = (lua_mysql_res *)luaL_checkudata (L, 1, LUA_MYSQL_RES);
@@ -255,12 +255,12 @@ static lua_mysql_res *Mget_res (lua_State *L) {
     return my_res;
 }
 
-/*
-** MYSQL operate functions
+/**
+* MYSQL operate functions
 */
 
 /**
-** Open a connection to a MySQL Server
+* Open a connection to a MySQL Server
 */
 static int Lmysql_connect (lua_State *L) {
     lua_mysql_conn *my_conn = (lua_mysql_conn *)lua_newuserdata(L, sizeof(lua_mysql_conn));
@@ -323,7 +323,7 @@ static int Lmysql_connect (lua_State *L) {
 }
 
 /**
-** Select a MySQL database
+* Select a MySQL database
 */
 static int Lmysql_select_db (lua_State *L) {
     lua_mysql_conn *my_conn = Mget_conn (L);
@@ -339,7 +339,7 @@ static int Lmysql_select_db (lua_State *L) {
 }
 
 /**
-** Sets the client character set
+* Sets the client character set
 */
 static int Lmysql_set_charset (lua_State *L) {
     lua_mysql_conn *my_conn = Mget_conn (L);
@@ -387,7 +387,7 @@ static int Lmysql_set_charset (lua_State *L) {
 }
 
 /**
-** Returns the text of the error message from previous MySQL operation
+* Returns the text of the error message from previous MySQL operation
 */
 static int Lmysql_error (lua_State *L) {
     lua_pushstring(L, mysql_error(Mget_conn(L)->conn));
@@ -395,7 +395,7 @@ static int Lmysql_error (lua_State *L) {
 }
 
 /**
-** Returns the numerical value of the error message from previous MySQL operation
+* Returns the numerical value of the error message from previous MySQL operation
 */
 static int Lmysql_errno (lua_State *L) {
     lua_pushnumber(L, mysql_errno(Mget_conn(L)->conn));
@@ -403,9 +403,9 @@ static int Lmysql_errno (lua_State *L) {
 }
 
 /**
-** Returns the version number of the server as an integer
-** major_version*10000 + minor_version *100 + sub_version
-** For example, 5.1.5 is returned as 50105. 
+* Returns the version number of the server as an integer
+* major_version*10000 + minor_version *100 + sub_version
+* For example, 5.1.5 is returned as 50105. 
 */
 static int Lmysql_get_server_version (lua_State *L) {
     lua_pushnumber(L, mysql_get_server_version(Mget_conn(L)->conn));
@@ -413,7 +413,7 @@ static int Lmysql_get_server_version (lua_State *L) {
 }
 
 /**
-** Returns a string that represents the server version number. 
+* Returns a string that represents the server version number. 
 */
 static int Lmysql_get_server_info (lua_State *L) {
     lua_pushstring(L, mysql_get_server_info(Mget_conn(L)->conn));
@@ -421,7 +421,7 @@ static int Lmysql_get_server_info (lua_State *L) {
 }
 
 /**
-**  Get number of affected rows in previous MySQL operation
+* Get number of affected rows in previous MySQL operation
 */
 static int Lmysql_affected_rows (lua_State *L) {
     lua_pushnumber(L, mysql_affected_rows(Mget_conn(L)->conn));
@@ -429,7 +429,7 @@ static int Lmysql_affected_rows (lua_State *L) {
 }
 
 /**
-** do Send a MySQL query
+* do Send a MySQL query
 */
 static int Lmysql_do_query (lua_State *L, int use_store) {
     lua_mysql_conn *my_conn = Mget_conn (L);
@@ -485,21 +485,21 @@ static int Lmysql_do_query (lua_State *L, int use_store) {
 }
 
 /**
-** Send a MySQL query
+* Send a MySQL query
 */
 static int Lmysql_query (lua_State *L) {
     return Lmysql_do_query(L, MYSQL_STORE_RESULT);
 }
 
 /**
-**  Send an SQL query to MySQL, without fetching and buffering the result rows
+*  Send an SQL query to MySQL, without fetching and buffering the result rows
 */
 static int Lmysql_unbuffered_query (lua_State *L) {
     return Lmysql_do_query(L, MYSQL_USE_RESULT);
 }
 
 /**
-** Get the ID generated from the previous INSERT operation
+* Get the ID generated from the previous INSERT operation
 */
 static int Lmysql_insert_id (lua_State *L) {
     lua_pushnumber(L, mysql_insert_id(Mget_conn(L)->conn));
@@ -507,7 +507,7 @@ static int Lmysql_insert_id (lua_State *L) {
 }
 
 /**
-** Escapes special characters in a string for use in a SQL statement
+* Escapes special characters in a string for use in a SQL statement
 */
 static int Lmysql_real_escape_string (lua_State *L) {
     lua_mysql_conn *my_conn = Mget_conn (L);
@@ -520,7 +520,7 @@ static int Lmysql_real_escape_string (lua_State *L) {
 }
 
 /**
-** Move internal result pointer
+* Move internal result pointer
 */
 static int Lmysql_data_seek (lua_State *L) {
     lua_Number offset = luaL_optnumber(L, 2, 0);
@@ -530,7 +530,7 @@ static int Lmysql_data_seek (lua_State *L) {
 }
 
 /**
-** Get number of fields in result
+* Get number of fields in result
 */
 static int Lmysql_num_fields (lua_State *L) {
     lua_pushnumber (L, (lua_Number)mysql_num_fields (Mget_res(L)->res));
@@ -538,13 +538,16 @@ static int Lmysql_num_fields (lua_State *L) {
 }
 
 /**
-** Get number of rows in result
+* Get number of rows in result
 */
 static int Lmysql_num_rows (lua_State *L) {
     lua_pushnumber (L, (lua_Number)mysql_num_rows (Mget_res(L)->res));
     return 1;
 }
 
+/**
+* do fetch
+*/
 static int Lmysql_do_fetch (lua_State *L, lua_mysql_res *my_res, int result_type) {
     MYSQL_RES *res = my_res->res;
     unsigned long *lengths;
@@ -598,21 +601,21 @@ static int Lmysql_do_fetch (lua_State *L, lua_mysql_res *my_res, int result_type
 }
 
 /**
-** Get a result row as an enumerated array
+* Get a result row as an enumerated array
 */
 static int Lmysql_fetch_row (lua_State *L) {
     return Lmysql_do_fetch(L, Mget_res(L), MYSQL_NUM);
 }
 
 /**
-** Get a result row as an enumerated array
+* Get a result row as an enumerated array
 */
 static int Lmysql_fetch_assoc (lua_State *L) {
     return Lmysql_do_fetch(L, Mget_res(L), MYSQL_ASSOC);
 }
 
 /**
-** Fetch a result row as an associative array, a numeric array, or both
+* Fetch a result row as an associative array, a numeric array, or both
 */
 static int Lmysql_fetch_array (lua_State *L) {
     lua_mysql_res *my_res = Mget_res (L);
@@ -630,7 +633,7 @@ static int Lmysql_fetch_array (lua_State *L) {
 }
 
 /*
-** Rollback the current transaction.
+* Rollback the current transaction.
 */
 static int Lmysql_rollback (lua_State *L) {
     lua_mysql_conn *my_conn = Mget_conn (L);
@@ -641,7 +644,7 @@ static int Lmysql_rollback (lua_State *L) {
 }
 
 /**
-** Free result memory
+* Free result memory
 */
 static int Lmysql_free_result (lua_State *L) {
     lua_mysql_res *my_res = (lua_mysql_res *)luaL_checkudata (L, 1, LUA_MYSQL_RES);
@@ -664,7 +667,7 @@ static int Lmysql_free_result (lua_State *L) {
 }
 
 /**
- Close MySQL connection
+* Close MySQL connection
 */
 static int Lmysql_close (lua_State *L) {
     lua_mysql_conn *my_conn = Mget_conn (L);
@@ -694,9 +697,9 @@ static int Lversion (lua_State *L) {
     return 1;
 }
 
-/*
-** Creates the metatables for the objects and registers the
-** driver open method.
+/**
+* Creates the metatables for the objects and registers the
+* driver open method.
 */
 int luaopen_mysql (lua_State *L) {
     struct luaL_reg driver[] = {
