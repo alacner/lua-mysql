@@ -557,50 +557,46 @@ static int Lmysql_do_fetch (lua_State *L, lua_mysql_res *my_res, int result_type
         return 1;
     }
 
-    lua_newtable(L);
-    lua_newtable(L);
-
     lengths = mysql_fetch_lengths(res);
+
 
     if (result_type == MYSQL_NUM) {
         int i;
-        /* Copy values to numerical indices */
+        lua_newtable(L); /* result */
+
         for (i = 0; i < my_res->numcols; i++) {
             luaM_pushvalue (L, row[i], lengths[i]);
             lua_rawseti (L, -2, i+1);
         }
     }
     else {
-        int i;
+
+        int i,j;
         /* Check if colnames exists */
         if (my_res->colnames == LUA_NOREF)
             luaM_colinfo(L, my_res);
         lua_rawgeti (L, LUA_REGISTRYINDEX, my_res->colnames);/* Push colnames*/
 
-        /* Copy values to alphanumerical indices */
+        lua_newtable(L); /* result */
+
         for (i = 0; i < my_res->numcols; i++) {
-            lua_rawgeti(L, -1, i+1); /* push the field name */
+            lua_rawgeti(L, -2, i+1); /* push the field name */
 
             /* Actually push the value */
             luaM_pushvalue (L, row[i], lengths[i]);
-            lua_rawset (L, -4);
+            lua_rawset (L, -3);
         }
 
         if (result_type == MYSQL_BOTH) {
-            //lua_pushstring(L, "both"); return 1;
             /* Copy values to numerical indices */
-            for (i = 0; i < my_res->numcols; i++) {
-                luaM_pushvalue (L, row[i], lengths[i]);
-                lua_rawseti (L, -4, i+1);
+            for (j = 0; j < my_res->numcols; j++) {
+                lua_pushnumber(L, j+1);
+                luaM_pushvalue (L, row[j], lengths[j]);
+                lua_rawset (L, -3);
             }
-            lua_pop(L, -5); /* Pops colnames table. */
-        }
-        else {
-            //lua_pushstring(L, "assoc"); return 1;
-            lua_pop(L, -4); /* Pops colnames table. */
         }
     }
-    return 1; /* return table */
+    return 1;
 }
 
 /**
@@ -626,10 +622,10 @@ static int Lmysql_fetch_array (lua_State *L) {
     lua_mysql_res *my_res = Mget_res (L);
     const char *result_type = luaL_optstring (L, 2, "MYSQL_BOTH");
 
-    if (result_type == "MYSQL_NUM") {
+    if ( ! strcasecmp(result_type, "MYSQL_NUM")) {
         return Lmysql_do_fetch(L, my_res, MYSQL_NUM);
     }
-    else if (result_type == "MYSQL_ASSOC") {
+    else if ( ! strcasecmp(result_type, "MYSQL_ASSOC")) {
         return Lmysql_do_fetch(L, my_res, MYSQL_ASSOC);
     }
     else {
