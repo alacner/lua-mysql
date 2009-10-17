@@ -49,12 +49,15 @@ print_r(row)
 print('------array----------')
 local row = rs:fetch_array()
 print_r(row)
-os.exit()
+--os.exit()
 while row do
     print_r(row)
-    row = rs:fetch_array("MYSQL_ASSOC")
+    --row = rs:fetch_array("MYSQL_NUM")
+    row = rs:fetch_array("MYSQL_BOTH")
+    --row = rs:fetch_array("MYSQL_ASSOC")
 end
 
+print(mysql.version());
 
 
 

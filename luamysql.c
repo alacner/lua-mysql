@@ -10,6 +10,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#define LUA_MYSQL_VERSION "1.0.0"
+
 #ifdef WIN32
 #include <winsock2.h>
 #define NO_CLIENT_LONG_LONG
@@ -91,9 +93,6 @@ typedef struct {
     int        colnames, coltypes; /* reference to column information tables */
     MYSQL_RES *res;
 } lua_mysql_res;
-
-
-
 
 void luaM_setmeta (lua_State *L, const char *name);
 int luaM_register (lua_State *L, const char *name, const luaL_reg *methods);
@@ -503,8 +502,7 @@ static int Lmysql_unbuffered_query (lua_State *L) {
 ** Get the ID generated from the previous INSERT operation
 */
 static int Lmysql_insert_id (lua_State *L) {
-    lua_mysql_conn *my_conn = Mget_conn (L);
-    lua_pushnumber(L, mysql_insert_id(my_conn->conn));
+    lua_pushnumber(L, mysql_insert_id(Mget_conn(L)->conn));
     return 1;
 }
 
@@ -603,16 +601,14 @@ static int Lmysql_do_fetch (lua_State *L, lua_mysql_res *my_res, int result_type
 ** Get a result row as an enumerated array
 */
 static int Lmysql_fetch_row (lua_State *L) {
-    lua_mysql_res *my_res = Mget_res (L);
-    return Lmysql_do_fetch(L, my_res, MYSQL_NUM);
+    return Lmysql_do_fetch(L, Mget_res(L), MYSQL_NUM);
 }
 
 /**
 ** Get a result row as an enumerated array
 */
 static int Lmysql_fetch_assoc (lua_State *L) {
-    lua_mysql_res *my_res = Mget_res (L);
-    return Lmysql_do_fetch(L, my_res, MYSQL_ASSOC);
+    return Lmysql_do_fetch(L, Mget_res(L), MYSQL_ASSOC);
 }
 
 /**
@@ -685,6 +681,19 @@ static int Lmysql_close (lua_State *L) {
     return 1;
 }
 
+/**
+* version info
+*/
+static int Lversion (lua_State *L) {
+    lua_pushfstring(L, "luamysql (%s) - MYSQL driver\n", LUA_MYSQL_VERSION);
+    lua_pushstring(L, "luamysql - MYSQL driver\n");
+    lua_pushstring(L, "(c) 2009-19 Alacner zhang <alacner@gmail.com>\n");
+    lua_pushstring(L, "This content is released under the MIT License.\n");
+
+    lua_concat (L, 4);
+    return 1;
+}
+
 /*
 ** Creates the metatables for the objects and registers the
 ** driver open method.
@@ -692,6 +701,7 @@ static int Lmysql_close (lua_State *L) {
 int luaopen_mysql (lua_State *L) {
     struct luaL_reg driver[] = {
         { "connect",   Lmysql_connect },
+        { "version",   Lversion },
         { NULL, NULL },
     };
 
@@ -737,4 +747,3 @@ int luaopen_mysql (lua_State *L) {
 
     return 1;
 }
-
