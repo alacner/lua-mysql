@@ -721,7 +721,6 @@ int luaopen_mysql (lua_State *L) {
     };
 
     static const luaL_reg connection_methods[] = {
-        { "connect",   Lmysql_connect },
         { "error",   Lmysql_error },
         { "errno",   Lmysql_errno },
         { "select_db",   Lmysql_select_db },
