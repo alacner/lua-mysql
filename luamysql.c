@@ -266,8 +266,8 @@ static int Lmysql_connect (lua_State *L) {
     lua_mysql_conn *my_conn = (lua_mysql_conn *)lua_newuserdata(L, sizeof(lua_mysql_conn));
     luaM_setmeta (L, LUA_MYSQL_CONN);
 
-    char *host = NULL, *socket=NULL, *tmp=NULL, htmp[1024];
-    char *host_and_port = luaL_optstring(L, 1, NULL);
+    char *host = NULL, *socket=NULL, *tmp=NULL, htmp[1024], *host_and_port;
+    const char *host_and_port_tmp = luaL_optstring(L, 1, NULL);
     const char *user = luaL_optstring(L, 2, NULL);
     const char *passwd = luaL_optstring(L, 3, NULL);
 
@@ -279,6 +279,8 @@ static int Lmysql_connect (lua_State *L) {
     if ( ! conn) {  
         return luaM_msg (L, 0, "Error: mysql_init failed !");
     }
+
+    host_and_port = strdup(host_and_port_tmp); // const char to char
 
     if (host_and_port && (tmp=strchr(host_and_port, ':'))) {
         host_and_port[strlen(host_and_port)-strlen(tmp)] = '\0';
