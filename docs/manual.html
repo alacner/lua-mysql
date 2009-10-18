@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+<meta http-equiv="Content-Language" content="en" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="author" content="Alacner Zhang" />
+<meta name="keywords" content="LUA,MYSQL,lua-mysql" />
+<meta name="description" content="homepage of lua-mysql" />
+<title>lua-mysql: a mysql driver for lua</title>
+</head>
+<body>
+<h1>lua-mysql: a mysql driver for lua</h1>
+<em>(c) 2009-19 Alacner zhang &lt;alacner@gmail.com&gt;<br/>* This content is released under the MIT License. </em>
+
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li>
+    <a href="#functions">Functions</a>
+    <ul>
+        <li>
+            <a href="#functions_public">public objects</a>
+            <ul>
+                <li><a href="#functions_public_version">version</a></li>
+                <li><a href="#functions_public_connect">connect</a></li>
+            </ul>
+        </li>
+        <li>
+            <a href="#functions_link">link objects</a>
+            <ul>
+                <li><a href="#functions_link_error">error</a></li>
+                <li><a href="#functions_link_errno">errno</a></li>
+                <li><a href="#functions_link_select_db">select_db</a></li>
+                <li><a href="#functions_link_insert_id">insert_id</a></li>
+                <li><a href="#functions_link_set_charset">set_charset</a></li>
+                <li><a href="#functions_link_affected_rows">affected_rows</a></li>
+                <li><a href="#functions_link_get_server_info">get_server_info</a></li>
+                <li><a href="#functions_link_get_server_version">get_server_version</a></li>
+                <li><a href="#functions_link_real_escape_string">real_escape_string</a></li>
+                <li><a href="#functions_link_escape_string">escape_string</a></li>
+                <li><a href="#functions_link_query">query</a></li>
+                <li><a href="#functions_link_unbuffered_query">unbuffered_query</a></li>
+                <li><a href="#functions_link_rollback">rollback</a></li>
+                <li><a href="#functions_link_close">close</a></li>
+            </ul>
+        </li>
+        <li>
+            <a href="#functions_result">result objects</a>
+            <ul>
+                <li><a href="#functions_result_data_seek">data_seek</a></li>
+                <li><a href="#functions_result_num_fields">num_fields</a></li>
+                <li><a href="#functions_result_num_rows">num_rows</a></li>
+                <li><a href="#functions_result_fetch_row">fetch_row</a></li>
+                <li><a href="#functions_result_fetch_assoc">fetch_assoc</a></li>
+                <li><a href="#functions_result_fetch_array">fetch_array</a></li>
+                <li><a href="#functions_result_free_result">free_result</a></li>
+            </ul>
+        </li>
+    </ul>
+</li>
+</ul>
+
+<a name="introduction" />
+<h2>Introduction</h2>
+This is a driver for lua to use mysql. You can download lua-mysql from <a target="_blank" href="/git/?p=lua-mysql.git;a=summary">git</a>, and <a target="_blank" href="/bug.php?project=lua-mysql">report bug</a> for me and i'll fix it as quickly as i can.
+<br/>after download,you can install like this.
+<pre  style='padding: 5px; margin: 10px; border: 1px solid #cccccc;' class='escaped'>
+tar xzvf lua-mysql.*
+cd lua-mysql.*
+make
+make install
+</pre>
+
+<a name="functions" />
+<h2>Functions</h2>
+<pre  style='padding: 5px; margin: 10px; border: 1px solid #cccccc;' class='escaped'>
+require "mysql"
+</pre>
+
+<a name="functions_public" />
+<h3>Public objects</h3>
+create the mysql connect link handle.
+
+<a name="functions_public_version" />
+<h4>mysql.version()</h4>
+<pre  style='padding: 5px; margin: 10px; border: 1px solid #cccccc;' class='escaped'>
+mysql.version()
+</pre>
+return the lua-mysql version info, just like:
+<pre  style='padding: 5px; margin: 10px; border: 1px solid #cccccc;' class='escaped'>
+luamysql (1.0.0) - MYSQL driver
+(c) 2009-19 Alacner zhang &lt;alacner@gmail.com&gt;
+This content is released under the MIT License.
+</pre>
+
+<a name="functions_public_connect" />
+<h4>mysql.conncet(server, username, password)</h4>
+Open a connection to a MySQL Server
+<pre  style='padding: 5px; margin: 10px; border: 1px solid #cccccc;' class='escaped'>
+local db, err = mysql.connect('host', 'user', 'passwd') -- if db == nil then err is the error, or db is the mysql link handle
+</pre>
+The MySQL server. It can also include a port number. e.g. "hostname:port" or a path to a local socket e.g. ":/path/to/socket" for the localhost. 
+
+<a name="functions_link" />
+<h3>Link objects</h3>
+the methods to contol the mysql link handle
+
+<a name="functions_link_error" />
+<h4>db:error()</h4>
+Returns the text of the error message from previous MySQL operation
+
+<a name="functions_link_errno" />
+<h4>db:errno()</h4>
+Returns the numerical value of the error message from previous MySQL operation
+
+<a name="functions_link_select_db" />
+<h4>db:select_db(dbname)</h4>
+Select a MySQL database
+
+<a name="functions_link_insert_id" />
+<h4>db:insert_id()</h4>
+Get the ID generated from the previous INSERT operation
+
+<a name="functions_link_set_charset" />
+<h4>db:set_charset(charset)</h4>
+Sets the client character set
+
+<a name="functions_link_affected_rows" />
+<h4>db:affected_rows()</h4>
+Get number of affected rows in previous MySQL operation
+
+<a name="functions_link_get_server_info" />
+<h4>db:get_server_info()</h4>
+Get MySQL server info
+
+<a name="functions_link_get_server_version" />
+<h4>db:get_server_version()</h4>
+Get MySQL server version info <br/>
+major_version*10000 + minor_version *100 + sub_version<br/>
+For example, 5.1.5 is returned as 50105.
+
+<a name="functions_link_real_escape_string" />
+<h4>db:real_escape_string(wanna_escape_string)</h4>
+Escapes special characters in a string for use in a SQL statement
+
+<a name="functions_link_escape_string" />
+<h4>db:escape_string(wanna_escape_string)</h4>
+Escapes a string for use in a mysql_query
+
+<a name="functions_link_query" />
+<h4>db:query(sql)</h4>
+Send a MySQL query
+<pre  style='padding: 5px; margin: 10px; border: 1px solid #cccccc;' class='escaped'>
+local res = db:('select * from `table`')
+</pre>
+
+<a name="functions_link_unbuffered_query" />
+<h4>db:unbuffered_query(sql)</h4>
+Send an SQL query to MySQL, without fetching and buffering the result rows
+
+<a name="functions_link_rollback" />
+<h4>db:rollback()</h4>
+Rollback the current transaction.
+
+<a name="functions_link_close" />
+<h4>db:close()</h4>
+Close MySQL connection
+
+<a name="functions_result" />
+<h3>Result objects</h3>
+the methods to contol the mysql result handle 
+
+<a name="functions_result_data_seek" />
+<h4>res:data_seek(num)</h4>
+Move internal result pointer
+
+<a name="functions_result_num_fields" />
+<h4>res:num_fields()</h4>
+Get number of fields in result
+
+<a name="functions_result_num_rows" />
+<h4>res:num_rows()</h4>
+Get number of rows in result , first index is like lua [1]
+
+<a name="functions_result_fetch_row" />
+<h4>res:fetch_row()</h4>
+Get a result row as an enumerated array
+
+<a name="functions_result_fetch_assoc" />
+<h4>res:fetch_assoc()</h4>
+Fetch a result row as an associative array
+
+<a name="functions_result_fetch_array" />
+<h4>res:fetch_array(MYSQL_BOTH|MYSQL_NUM|MYSQL_ASSOC)</h4>
+Fetch a result row as an associative array, a numeric array, or both, default is "MYSQL_BOTH"
+
+<a name="functions_result_free_result" />
+<h4>res:free_result()</h4>
+Free result memory
+
+</body>
+</html>
