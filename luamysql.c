@@ -691,11 +691,10 @@ static int Lmysql_close (lua_State *L) {
 */
 static int Lversion (lua_State *L) {
     lua_pushfstring(L, "luamysql (%s) - MYSQL driver\n", LUA_MYSQL_VERSION);
-    lua_pushstring(L, "luamysql - MYSQL driver\n");
     lua_pushstring(L, "(c) 2009-19 Alacner zhang <alacner@gmail.com>\n");
     lua_pushstring(L, "This content is released under the MIT License.\n");
 
-    lua_concat (L, 4);
+    lua_concat (L, 3);
     return 1;
 }
 
