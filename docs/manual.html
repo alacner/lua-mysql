@@ -27,6 +27,7 @@
             <ul>
                 <li><a href="#functions_public_version">version</a></li>
                 <li><a href="#functions_public_connect">connect</a></li>
+                <li><a href="#functions_public_escape_string">escape_string</a></li>
             </ul>
         </li>
         <li>
@@ -41,7 +42,6 @@
                 <li><a href="#functions_link_get_server_info">get_server_info</a></li>
                 <li><a href="#functions_link_get_server_version">get_server_version</a></li>
                 <li><a href="#functions_link_real_escape_string">real_escape_string</a></li>
-                <li><a href="#functions_link_escape_string">escape_string</a></li>
                 <li><a href="#functions_link_query">query</a></li>
                 <li><a href="#functions_link_unbuffered_query">unbuffered_query</a></li>
                 <li><a href="#functions_link_rollback">rollback</a></li>
@@ -105,6 +105,10 @@ local db, err = mysql.connect('host', 'user', 'passwd') -- if db == nil then err
 </pre>
 The MySQL server. It can also include a port number. e.g. "hostname:port" or a path to a local socket e.g. ":/path/to/socket" for the localhost. 
 
+<a name="functions_public_escape_string" />
+<h4>mysql.escape_string(wanna_escape_string)</h4>
+Escapes a string for use in a mysql_query
+
 <a name="functions_link" />
 <h3>Link objects</h3>
 the methods to contol the mysql link handle
@@ -146,10 +150,6 @@ For example, 5.1.5 is returned as 50105.
 <a name="functions_link_real_escape_string" />
 <h4>db:real_escape_string(wanna_escape_string)</h4>
 Escapes special characters in a string for use in a SQL statement
-
-<a name="functions_link_escape_string" />
-<h4>db:escape_string(wanna_escape_string)</h4>
-Escapes a string for use in a mysql_query
 
 <a name="functions_link_query" />
 <h4>db:query(sql)</h4>

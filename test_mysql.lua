@@ -19,9 +19,9 @@ print(db:insert_id())
 print(db:affected_rows())
 print(db:query("insert `table` (`dhits`,`time`,`col1`,`col2`) values (10000, 33333, '天使', 'hehe')"))
 print(db:affected_rows())
-print(db:escape_string('哈哈"'))
+print(mysql.escape_string('哈哈"'))
 print(db:real_escape_string([['哈哈`"'\n]]))
---os.exit();
+os.exit();
 local rs = db:query("select * from `table`")
 --local rs = db:query("select * from `table` limit 30")
 --local rs = db:unbuffered_query("select * from `table`")
