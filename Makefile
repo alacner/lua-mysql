@@ -56,7 +56,7 @@ install: mysql.so
 clean:
 	$(RM) mysql.so
 
-test: mysql.so test_mysql.lua
-	lua test_mysql.lua
+test: mysql.so test.lua
+	lua test.lua
 
 all: mysql.so

@@ -1,6 +1,13 @@
 require "mysql"
 require "print_r"
---[[
+
+local db, err = mysql.connect('localhost', 'root', 'kernel')
+print(db)
+print(err)
+print(db:select_db('testdb'))
+print(db:set_charset("utf-8"))
+--os.exit();
+print(db:query([[
 CREATE TABLE IF NOT EXISTS `table` (
   `id` bigint(20) NOT NULL auto_increment,
   `hits` int(10) NOT NULL default '0',
@@ -9,11 +16,7 @@ CREATE TABLE IF NOT EXISTS `table` (
   `col2` text NOT NULL,
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
---]]
-local db, err = mysql.connect('localhost', 'root', 'kernel')
-print(db:select_db('testdb'))
-print(db:set_charset("utf-8"))
---os.exit();
+]]))
 print(db:query("insert `table` (`hits`,`time`,`col1`,`col2`) values (10000, 33333, '天使', 'hehe')"))
 print(db:insert_id())
 print(db:affected_rows())

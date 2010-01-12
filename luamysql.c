@@ -10,7 +10,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#define LUA_MYSQL_VERSION "1.0.0"
+#define LUA_MYSQL_VERSION "1.0.3"
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -189,11 +189,7 @@ int luaM_register (lua_State *L, const char *name, const luaL_reg *methods) {
 */
 
 static int luaM_msg(lua_State *L, const int n, const char *m) {
-    if (n) {
-        lua_pushnumber(L, 1);
-    } else {
-        lua_pushnil(L);
-    }
+    lua_pushboolean(L, n);
     lua_pushstring(L, m);
     return 2;
 }
@@ -266,7 +262,7 @@ static int Lmysql_connect (lua_State *L) {
     lua_mysql_conn *my_conn = (lua_mysql_conn *)lua_newuserdata(L, sizeof(lua_mysql_conn));
     luaM_setmeta (L, LUA_MYSQL_CONN);
 
-    char *host = NULL, *socket=NULL, *tmp=NULL, htmp[1024], *host_and_port;
+    char *host = NULL, *socket=NULL, *tmp=NULL, *host_and_port;
     const char *host_and_port_tmp = luaL_optstring(L, 1, NULL);
     const char *user = luaL_optstring(L, 2, NULL);
     const char *passwd = luaL_optstring(L, 3, NULL);
@@ -280,28 +276,29 @@ static int Lmysql_connect (lua_State *L) {
         return luaM_msg (L, 0, "Error: mysql_init failed !");
     }
 
-    host_and_port = strdup(host_and_port_tmp); // const char to char
+	host_and_port = strdup(host_and_port_tmp); // const char to char
+	// parser : hostname:port:/path/to/socket or hostname:port or hostname:/path/to/socket or :/path/to/socket
+    if (host_and_port && (strchr(host_and_port, ':'))) {
+		tmp = strtok(host_and_port, ":");
 
-    if (host_and_port && (tmp=strchr(host_and_port, ':'))) {
-        host_and_port[strlen(host_and_port)-strlen(tmp)] = '\0';
-        strcpy(htmp, host_and_port);
-        host = htmp;
-        tmp++;
-        if (tmp[0] != '/') {
-            port = atoi(tmp);
-            if ((tmp=strchr(tmp, ':'))) {
-                tmp++;
-                socket=tmp;
-            }
-        } else {
-            socket = tmp;
-        }
-    } else {
-        host_and_port[strlen(host_and_port)] = '\0';
-        strcpy(htmp, host_and_port);
-        host = htmp;
-    }
+		if (host_and_port[0] != ':') {
+			host = tmp;
+			tmp = strtok(NULL, ":");
+		}
 
+		if (tmp[0] != '/') {
+			port = atoi(tmp);
+			if ((tmp=strtok(NULL, ":"))) {
+				socket = tmp;
+			}
+		} else {
+			socket = tmp;
+		}
+	}
+	else {
+        host = host_and_port;
+	}
+	
 #if MYSQL_VERSION_ID < 32200
     mysql_port = port;
 #endif
@@ -321,6 +318,8 @@ static int Lmysql_connect (lua_State *L) {
     my_conn->env = LUA_NOREF;
     my_conn->conn = conn;
 
+	/* free memory */
+	//free(host_and_port);
     return 1;
 }
 
@@ -335,8 +334,8 @@ static int Lmysql_select_db (lua_State *L) {
         return luaM_msg (L, 0, mysql_error(my_conn->conn));
     }
     else {
-        lua_pushboolean(L, 1);
-        return 1;
+		lua_pushboolean(L, 1);
+		return 1;
     }
 }
 
@@ -384,8 +383,8 @@ static int Lmysql_set_charset (lua_State *L) {
         }
     }
 
-    lua_pushboolean(L, 1);
-    return 1;
+	lua_pushboolean(L, 1);
+	return 1;
 }
 
 /**
@@ -438,6 +437,7 @@ static int Lmysql_do_query (lua_State *L, int use_store) {
     const char *statement = luaL_checkstring (L, 2);
     unsigned long st_len = strlen(statement);
     MYSQL_RES *res;
+
     /* mysql_query is binary unsafe, use mysql_real_query */
 #if MYSQL_VERSION_ID > 32199
     if (mysql_real_query(my_conn->conn, statement, st_len)) {
@@ -528,6 +528,7 @@ static int Lmysql_real_escape_string (lua_State *L) {
     const char *unescaped_string = luaL_checkstring (L, 2);
     unsigned long st_len = strlen(unescaped_string);
     char to[st_len*2+1]; 
+
     mysql_real_escape_string(my_conn->conn, to, unescaped_string, st_len);
     lua_pushstring(L, to);
     return 1;
