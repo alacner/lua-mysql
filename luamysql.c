@@ -319,7 +319,7 @@ static int Lmysql_connect (lua_State *L) {
     my_conn->conn = conn;
 
 	/* free memory */
-	//free(host_and_port);
+	free(host_and_port);
     return 1;
 }
 
