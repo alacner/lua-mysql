@@ -90,45 +90,12 @@ typedef struct {
     short      closed;
     int        conn;               /* reference to connection */
     int        numcols;            /* number of columns */
-    int        colnames, coltypes; /* reference to column information tables */
     MYSQL_RES *res;
 } lua_mysql_res;
 
 void luaM_setmeta (lua_State *L, const char *name);
 int luaM_register (lua_State *L, const char *name, const luaL_reg *methods);
 int luaopen_mysql (lua_State *L);
-
-/**
-* Get the internal database type of the given column.
-*/
-static char *luaM_getcolumntype (enum enum_field_types type) {
-
-    switch (type) {
-        case MYSQL_TYPE_VAR_STRING: case MYSQL_TYPE_STRING:
-            return "string";
-        case MYSQL_TYPE_DECIMAL: case MYSQL_TYPE_SHORT: case MYSQL_TYPE_LONG:
-        case MYSQL_TYPE_FLOAT: case MYSQL_TYPE_DOUBLE: case MYSQL_TYPE_LONGLONG:
-        case MYSQL_TYPE_INT24: case MYSQL_TYPE_YEAR: case MYSQL_TYPE_TINY:
-            return "number";
-        case MYSQL_TYPE_TINY_BLOB: case MYSQL_TYPE_MEDIUM_BLOB:
-        case MYSQL_TYPE_LONG_BLOB: case MYSQL_TYPE_BLOB:
-            return "binary";
-        case MYSQL_TYPE_DATE: case MYSQL_TYPE_NEWDATE:
-            return "date";
-        case MYSQL_TYPE_DATETIME:
-            return "datetime";
-        case MYSQL_TYPE_TIME:
-            return "time";
-        case MYSQL_TYPE_TIMESTAMP:
-            return "timestamp";
-        case MYSQL_TYPE_ENUM: case MYSQL_TYPE_SET:
-            return "set";
-        case MYSQL_TYPE_NULL:
-            return "null";
-        default:
-            return "undefined";
-    }
-}
 
 /**                   
 * Return the name of the object's metatable.
@@ -203,29 +170,6 @@ static void luaM_pushvalue (lua_State *L, void *row, long int len) {
     else
         lua_pushlstring (L, row, len);
 }
-
-/**
-* Creates the lists of fields names and fields types.
-*/
-static void luaM_colinfo (lua_State *L, lua_mysql_res *my_res) {
-    MYSQL_FIELD *fields;
-    char typename[50];
-    int i;
-    fields = mysql_fetch_fields(my_res->res);
-    lua_newtable (L); /* names */
-    lua_newtable (L); /* types */
-    for (i = 1; i <= my_res->numcols; i++) {
-        lua_pushstring (L, fields[i-1].name);
-        lua_rawseti (L, -3, i);
-        sprintf (typename, "%.20s(%ld)", luaM_getcolumntype (fields[i-1].type), fields[i-1].length);
-        lua_pushstring(L, typename);
-        lua_rawseti (L, -2, i);
-    }
-    /* Stores the references in the result structure */
-    my_res->coltypes = luaL_ref (L, LUA_REGISTRYINDEX);
-    my_res->colnames = luaL_ref (L, LUA_REGISTRYINDEX);
-}
-
 
 /**
 * Handle Part
@@ -465,8 +409,6 @@ static int Lmysql_do_query (lua_State *L, int use_store) {
             my_res->closed = 0;
             my_res->conn = LUA_NOREF;
             my_res->numcols = num_cols;
-            my_res->colnames = LUA_NOREF;
-            my_res->coltypes = LUA_NOREF;
             my_res->res = res;
             lua_pushvalue (L, 1);
             my_res->conn = luaL_ref (L, LUA_REGISTRYINDEX);
@@ -588,16 +530,17 @@ static int Lmysql_do_fetch (lua_State *L, lua_mysql_res *my_res, int result_type
     else {
 
         int i,j;
+        MYSQL_FIELD *field;
         /* Check if colnames exists */
-        if (my_res->colnames == LUA_NOREF)
-            luaM_colinfo(L, my_res);
-        lua_rawgeti (L, LUA_REGISTRYINDEX, my_res->colnames);/* Push colnames*/
-
         lua_newtable(L); /* result */
 
-        for (i = 0; i < my_res->numcols; i++) {
-            lua_rawgeti(L, -2, i+1); /* push the field name */
-
+	mysql_field_seek(my_res->res, 0);
+	for (field = mysql_fetch_field(my_res->res), i = 0;
+                 field;
+                 field = mysql_fetch_field(my_res->res), i++)
+        {
+            /* push the field name */
+            luaM_pushvalue (L, field->name, field->name_length);
             /* Actually push the value */
             luaM_pushvalue (L, row[i], lengths[i]);
             lua_rawset (L, -3);
@@ -673,8 +616,6 @@ static int Lmysql_free_result (lua_State *L) {
     my_res->closed = 1;
     mysql_free_result(my_res->res);
     luaL_unref (L, LUA_REGISTRYINDEX, my_res->conn);
-    luaL_unref (L, LUA_REGISTRYINDEX, my_res->colnames);
-    luaL_unref (L, LUA_REGISTRYINDEX, my_res->coltypes);
 
     lua_pushboolean (L, 1);
 
